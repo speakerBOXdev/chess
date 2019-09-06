@@ -9,6 +9,10 @@ const pieceStyles = {
     'king': 'fas fa-chess-king',
 }
 
+// Toggle debug messages
+var isDebug = true;
+
+
 const maxRows = 8, maxColumns = 8;
 
 var fromPosition = null,
@@ -21,6 +25,10 @@ $(document).ready(function() {
 
 /**
  * @summary Initialize board
+ * @description Creates elements within specified containers to render
+ * the board and alert messages
+ * @param boardSelector jQuery selector for element to place board
+ * @param alertSelector jQuery selector for element to place alerts
  */
 function initialize(boardSelector = "#board", alertSelector = "#second") {
      
@@ -72,6 +80,11 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     render();
 }
 
+/**
+ * 
+ * @param {number} row 
+ * @param {number} column 
+ */
 function movePiece(row, column) {
 
     $("#alerts").empty();
@@ -91,7 +104,7 @@ function movePiece(row, column) {
             return;
         } 
 
-        showAlert("Where do you want to move your " + positions[row][column].type);
+        showAlert("Where do you want to move your " + positions[row][column].type + "?");
 
         fromPosition = { r: row, c: column, p: positions[row][column] };
         $('#R' + row + 'C' + column).addClass('selected');
@@ -101,8 +114,20 @@ function movePiece(row, column) {
 
         let nextPosition = { r: row, c: column, p: positions[row][column] };
 
+        if (nextPosition.p.player === fromPosition.p.player) {
+            showAlert(fromPosition.p.player + " has decided to change piece from '" + fromPosition.p.type + "' to '" + nextPosition.p.type + "'.", 'debug');
+            $('#R' + fromPosition.r + 'C' + fromPosition.c).removeClass('selected');
+            $('#R' + nextPosition.r + 'C' + nextPosition.c).addClass('selected');
+            fromPosition = nextPosition;
+            return;
+        }
+
         // Verify Move
         if (validateMove(fromPosition, nextPosition)) {
+
+            if (nextPosition.p.player != "none") {
+                showAlert(currentPlayer + " took " + nextPosition.p.player + "'s " + nextPosition.p.type);
+            }
 
             // Swap the positions for the piece
             positions[row][column] = positions[fromPosition.r][fromPosition.c];
@@ -131,7 +156,7 @@ function render() {
                 .append(icon);
         }
     }
-    showAlert("It is your turn: " + currentPlayer);
+    showAlert("It is your turn " + currentPlayer);
 }
 
 function initializePieces() {
@@ -210,6 +235,8 @@ function initializePieces() {
 
 function showAlert(message, type = "info") {
 
+    if (type === "debug" && !isDebug) { return; }
+    
     let $alert = $("<div></div>")
       .addClass("alert alert-" + type)
       .text(message);
@@ -220,31 +247,38 @@ function showAlert(message, type = "info") {
 function validateMove(fromPosition, toPosition) {
 
     let isValidMove = true;
-    
-    // if (fromPosition.p.player == toPosition.p.player) {
-    //     showAlert("You can't take your own piece.", 'warning');
-    //     isValidMove = false;
-    //     return;
-    // }
-    
+    let warningMessage = "";
     let colorMultiplier = (currentPlayer === "white") ? 1 : -1;
 
     switch (fromPosition.p.type) {
         case 'pawn':
-            if (toPosition.c != fromPosition.c) {
-                showAlert("Invalid move for the pawn", 'warning');                
+            if (toPosition.r > fromPosition.r + (1 * colorMultiplier)) {
+                warningMessage = "Cannot change move forward more than 1 row.";
                 isValidMove = false;
-            } else  if (toPosition.r > fromPosition.r + (1 * colorMultiplier)) {
-                showAlert("Invalid move for the pawn", 'warning');
+            } else if (toPosition.c != fromPosition.c) {
+                // Allow for taking another player on a diagonal
+                if (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
+                    && toPosition.p.player != currentPlayer && toPosition.p.player != 'none') {
+                    break;
+                }
+                warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
                 isValidMove = false;
-            } else {
-                showAlert("Valid move for the pawn");
+            } else  if (toPosition.r <= fromPosition.r * colorMultiplier) {
+                warningMessage = "Cannot move backwards.";
+                isValidMove = false;
             }
             break;
             default:
-                    showAlert("Unknown piece: '" + fromPosition.p.type + "'");
+                warningMessage = "Unknown piece.";
                 isValidMove = false;
                 break;
+    }
+
+    if (isValidMove) {
+        showAlert("Valid move for '" + fromPosition.p.type + "'.", "debug");
+    } else {
+        if (!warningMessage) { warningMessage = "unknown problem"; }
+        showAlert("Invalid move for '" + fromPosition.p.type + "'. " + warningMessage, "warning");
     }
 
     return isValidMove;
