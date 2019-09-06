@@ -62,7 +62,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         // Build columns for board
         for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
             
-            columns.push( { row: rowIndex, column: columnIndex, type: 'empty', player: 'none' });
+            columns.push( { row: rowIndex, column: columnIndex, type: 'empty', player: 'none', moveCount: 0 });
 
             // Create new tile
             let tile = $("<div></div>");
@@ -149,6 +149,7 @@ function movePiece(row, column) {
 
             // Swap the positions for the piece
             positions[row][column] = positions[fromPosition.r][fromPosition.c];
+            positions[row][column].moveCount++;
             positions[fromPosition.r][fromPosition.c] = { type: 'empty', player: 'none' };
             
             // Reset and change the active player
@@ -273,22 +274,26 @@ function validateMove(fromPosition, toPosition) {
 
     switch (fromPosition.p.type) {
         case 'pawn':
+            let allowedRowChange = (fromPosition.p.moveCount > 0) ? 1 : 2;
 
             let rowDiff = (toPosition.r - fromPosition.r) * colorMultiplier;
-            if (rowDiff > 1) {
-                warningMessage = "Cannot change move forward more than 1 row.";
-                showAlert(toPosition.r + " > " + fromPosition.r + " + (1 * " + colorMultiplier + ")", "debug");
+            if (rowDiff > allowedRowChange) {
+                warningMessage = "Cannot change move forward more than " + allowedRowChange + " row.";
                 isValidMove = false;
             } else if (toPosition.c != fromPosition.c) {
                 // Allow for taking another player on a diagonal
-                if (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
-                    && toPosition.p.player != currentPlayer && toPosition.p.player != 'none') {
+                if (rowDiff == 1 &&
+                    (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
+                    && toPosition.p.player != currentPlayer && toPosition.p.player != 'none')) {
                     break;
                 }
                 warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
                 isValidMove = false;
             } else if (rowDiff < 1) {
                 warningMessage = "Cannot move backwards.";
+                isValidMove = false;
+            } else if (toPosition.p.type != 'empty') {
+                warningMessage = "Cannot take piece straight on.";
                 isValidMove = false;
             }
             break;
@@ -300,8 +305,7 @@ function validateMove(fromPosition, toPosition) {
 
     if (isValidMove) {
         let msg = "Valid move for '" + fromPosition.p.type + "'.";
-        msg += " From: R" + fromPosition.r + "C" + fromPosition.c
-        msg += " to R" + toPosition.r + "C" + toPosition.c
+        
         showAlert(msg, "debug");
     } else {
         if (!warningMessage) { warningMessage = "unknown problem"; }
