@@ -274,6 +274,12 @@ function validateMove(fromPosition, toPosition) {
 
     switch (fromPosition.p.type) {
         case 'pawn':
+
+            // isMoveForward()
+            // && isMoveSingle()
+            // && isMoveVertical()
+            // && !collisionDetected();
+
             let allowedRowChange = (fromPosition.p.moveCount > 0) ? 1 : 2;
 
             let rowDiff = (toPosition.r - fromPosition.r) * colorMultiplier;
@@ -296,6 +302,85 @@ function validateMove(fromPosition, toPosition) {
                 warningMessage = "Cannot take piece straight on.";
                 isValidMove = false;
             }
+            
+            if (collisionDetected(fromPosition, toPosition)) {
+                warningMessage = "There is a piece in the way";
+                isValidMove = false;
+            }
+
+            break;
+        case "bishop":
+            // Allowed to move in diagonal direction
+
+            if (!isMoveDiagonal(fromPosition, toPosition)) {
+                isValidMove = false;
+                warningMessage = "Must move diagonally";
+                break;
+            }
+            
+            if (collisionDetected(fromPosition, toPosition)) {
+                isValidMove = false;
+                warningMessage = "There is a piece in the way";
+                break;
+            }
+            
+            break;
+        case "rook":
+            // Allowed to move laterally
+            if (!isMoveHorizontal(fromPosition, toPosition)
+                && !isMoveVertical(fromPosition, toPosition)) {
+                warningMessage = "Cannot move diagonally.";
+                isValidMove = false;    
+                break;
+            }
+            
+            if (collisionDetected(fromPosition, toPosition)) {
+                warningMessage = "There is a piece in the way";
+                isValidMove = false;
+                break;
+            }
+
+            break;
+        case "knight":
+            // Allowed to take 'L' shaped move and jump over pieces.
+
+            if (!isMoveLShaped(fromPosition, toPosition)) {
+                isValidMove = false;
+                warningMessage = "This is not an 'L' shaped move.";
+                break;
+            }
+
+            break;
+        case "queen":
+            // Allowed to move any direction
+            if (!(isMoveDiagonal(fromPosition, toPosition)
+                || isMoveVertical(fromPosition, toPosition)
+                || isMoveHorizontal(fromPosition, toPosition))) {
+                warningMessage = "Must be a straight line.";
+                isValidMove = false;
+                break;
+            }
+            if (collisionDetected(fromPosition, toPosition)) {
+                warningMessage = "There is a piece in the way";
+                isValidMove = false;
+                break;
+            }
+
+            break;
+        case "king":
+            // Allowed to move any direction only one space
+            if (!(isMoveDiagonal(fromPosition, toPosition)
+                || isMoveVertical(fromPosition, toPosition)
+                || isMoveHorizontal(fromPosition, toPosition))) {
+                warningMessage = "Must be a straight line.";
+                isValidMove = false;
+                break;
+            }
+            let allowedChange = 1;
+            if (!isMoveOfLimitedSpaces(fromPosition, toPosition, allowedChange)) {
+                warningMessage = "Move cannot be more than " + allowedChange + " space";
+                isValidMove = false;
+            }
             break;
         default:
             warningMessage = "Unknown piece.";
@@ -313,4 +398,105 @@ function validateMove(fromPosition, toPosition) {
     }
 
     return isValidMove;
+}
+
+function isMoveLShaped(fromPosition, toPosition) {
+    let response = false,
+    rdiff = Math.abs(fromPosition.r - toPosition.r),
+    cdiff = Math.abs(fromPosition.c - toPosition.c);
+
+    if ((rdiff == 2 && cdiff == 1)
+    || (rdiff == 1 && cdiff == 2)) {
+        response = true;
+    }
+
+    return response;
+}
+
+function isMoveFoward(fromPosition, toPosition) {
+    let response = false;
+
+    return response;
+}
+
+function isMoveOfLimitedSpaces(fromPosition, toPosition, limit) {
+    let response = false,
+    rdiff = Math.abs(fromPosition.r - toPosition.r),
+    cdiff = Math.abs(fromPosition.c - toPosition.c);
+
+    if (rdiff <= limit && cdiff <= limit) {
+        response = true;
+    }
+
+    return response;
+}
+
+function isMoveDiagonal(fromPosition, toPosition) {
+    let response = false,
+    rdiff = Math.abs(fromPosition.r - toPosition.r),
+    cdiff = Math.abs(fromPosition.c - toPosition.c);
+
+    if (rdiff > 0 && cdiff > 0 && rdiff == cdiff) {
+        response = true;
+    }
+    
+    return response;
+}
+
+function isMoveHorizontal(fromPosition, toPosition) {
+    let response = false;
+    if (fromPosition.r == toPosition.r 
+        && fromPosition.c != toPosition.c) {
+        response = true;
+    }
+    return response;
+}
+
+function isMoveVertical(fromPosition, toPosition) {
+    let response = false;
+    if (fromPosition.c == toPosition.c 
+        && fromPosition.r != toPosition.r) {
+        response = true;
+    }
+    return response;
+}
+
+function collisionDetected(fromPosition, toPosition) {
+
+    let currentPiece = fromPosition.p,
+        hasCollision = false;
+
+    console.info("From Position: (" + fromPosition.r + ", " + fromPosition.c + ")");
+
+    let rmove = (fromPosition.r > toPosition.r) ? -1 : (fromPosition.r < toPosition.r) ? 1 : 0;
+    let cmove = (fromPosition.c > toPosition.c) ? -1 : (fromPosition.c < toPosition.c) ? 1 : 0;
+
+    let nextPiece = {
+        r: fromPosition.r + rmove, 
+        c: fromPosition.c + cmove, 
+        p: positions[fromPosition.r + rmove][fromPosition.c + cmove]
+    };
+
+    let counter = 0;
+    while (nextPiece.r != toPosition.r || nextPiece.c != toPosition.c) {
+    
+        console.info("Checking nextPiece: (" + nextPiece.r + ", " + nextPiece.c + ") has '" + nextPiece.p.type + "'");
+        if (nextPiece.p.type != 'empty') {
+            hasCollision = true;
+            break;
+        }
+        nextPiece = {
+            r: nextPiece.r + rmove, 
+            c: nextPiece.c + cmove, 
+            p: positions[nextPiece.r + rmove][nextPiece.c + cmove]
+        };    
+        if (counter++ > 70) {
+            throw "We've GONE TOO FAR"; 
+            break;
+        }
+    }
+
+    console.info("To Position: (" + toPosition.r + ", " + toPosition.c + ")");
+
+    return hasCollision;
 }
