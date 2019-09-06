@@ -9,8 +9,17 @@ header {
 aside, section {
     display: inline-block;
     vertical-align: top;
+    margin:0;
+    padding: 0;
 }
-
+aside {
+    width: 24%;
+}
+section {
+    width: 50%;
+    text-align: center;
+    margin-top: 55px;
+}
 .tile {
     display: inline-block;
     width: 50px;
@@ -56,10 +65,18 @@ aside, section {
 .alert {
     padding: 25px;
     border-radius: 10px;
+    margin: 10px;
+    border-width: 1px;
+    border-style: solid;
+}
+.alert-debug {
+    background-color: lightgray;
+    border-color: gray;
 }
 .alert-info {
     background-color: lightblue;
 }
 .alert-warning {
     background-color: lightgoldenrodyellow;
+    border-color: goldenrod;
 }
