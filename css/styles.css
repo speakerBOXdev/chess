@@ -20,6 +20,25 @@ section {
     text-align: center;
     margin-top: 55px;
 }
+#board .row:first-child .marker:first-child {
+    margin-left:60px;
+}
+.marker {
+    display: inline-block;
+    vertical-align: middle;
+    height: 30px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: transparent;
+    padding-top: 20px;
+    padding-right: 10px;
+    width: 30px;
+    padding-left: 10px;
+}
+/*
+.marker {
+    display: none;
+}*/
 .tile {
     display: inline-block;
     width: 50px;
