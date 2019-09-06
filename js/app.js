@@ -17,7 +17,8 @@ const maxRows = 8, maxColumns = 8;
 
 var fromPosition = null,
     positions = [],
-    currentPlayer = 'white';
+    currentPlayer = 'white',
+    gameover = false;
 
 $(document).ready(function() {
     initialize();
@@ -36,6 +37,16 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     $(alertSelector).append(
         $("<div></div>").prop('id', 'alerts')
     );
+    
+    // Create row element to contain columns
+    let $rowContainer = $("<div></div>");
+    $rowContainer.addClass("row");
+    for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
+        
+        let gridMarker = $("<div></div>").text("C" + columnIndex).addClass("marker marker-row");
+        $rowContainer.append(gridMarker)
+    }
+    $("#board").append($rowContainer);
 
     // Build rows for board
     for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
@@ -43,6 +54,9 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         // Create row element to contain columns
         let $rowContainer = $("<div></div>");
         $rowContainer.addClass("row");
+
+        let gridMarker = $("<div></div>").text("R" + rowIndex).addClass("marker marker-row");
+        $rowContainer.append(gridMarker)
 
         let columns = [];
         // Build columns for board
@@ -125,8 +139,12 @@ function movePiece(row, column) {
         // Verify Move
         if (validateMove(fromPosition, nextPosition)) {
 
-            if (nextPosition.p.player != "none") {
+            if (nextPosition.p.player != "none" && nextPosition.p.player != currentPlayer) {
                 showAlert(currentPlayer + " took " + nextPosition.p.player + "'s " + nextPosition.p.type);
+                if (nextPosition.p.type == 'king') {
+                    showAlert(currentPlayer + " has won the game!");
+                    gameover = true;
+                }
             }
 
             // Swap the positions for the piece
@@ -156,7 +174,10 @@ function render() {
                 .append(icon);
         }
     }
-    showAlert("It is your turn " + currentPlayer);
+
+    if (!gameover) {
+        showAlert("It is your turn " + currentPlayer);
+    }
 }
 
 function initializePieces() {
@@ -252,8 +273,11 @@ function validateMove(fromPosition, toPosition) {
 
     switch (fromPosition.p.type) {
         case 'pawn':
-            if (toPosition.r > fromPosition.r + (1 * colorMultiplier)) {
+
+            let rowDiff = (toPosition.r - fromPosition.r) * colorMultiplier;
+            if (rowDiff > 1) {
                 warningMessage = "Cannot change move forward more than 1 row.";
+                showAlert(toPosition.r + " > " + fromPosition.r + " + (1 * " + colorMultiplier + ")", "debug");
                 isValidMove = false;
             } else if (toPosition.c != fromPosition.c) {
                 // Allow for taking another player on a diagonal
@@ -263,19 +287,22 @@ function validateMove(fromPosition, toPosition) {
                 }
                 warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
                 isValidMove = false;
-            } else  if (toPosition.r <= fromPosition.r * colorMultiplier) {
+            } else if (rowDiff < 1) {
                 warningMessage = "Cannot move backwards.";
                 isValidMove = false;
             }
             break;
-            default:
-                warningMessage = "Unknown piece.";
-                isValidMove = false;
-                break;
+        default:
+            warningMessage = "Unknown piece.";
+            isValidMove = false;
+            break;
     }
 
     if (isValidMove) {
-        showAlert("Valid move for '" + fromPosition.p.type + "'.", "debug");
+        let msg = "Valid move for '" + fromPosition.p.type + "'.";
+        msg += " From: R" + fromPosition.r + "C" + fromPosition.c
+        msg += " to R" + toPosition.r + "C" + toPosition.c
+        showAlert(msg, "debug");
     } else {
         if (!warningMessage) { warningMessage = "unknown problem"; }
         showAlert("Invalid move for '" + fromPosition.p.type + "'. " + warningMessage, "warning");
