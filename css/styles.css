@@ -133,3 +133,12 @@ section {
     background-color: skyblue;
     border-color: skyblue;
 }
+
+.red .light {
+    background-color: lightcoral;
+    border-color: lightcoral;
+}
+.red .dark {
+    background-color: maroon;
+    border-color: maroon;
+}

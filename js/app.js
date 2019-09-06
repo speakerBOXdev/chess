@@ -9,6 +9,12 @@ const pieceStyles = {
     'king': 'fas fa-chess-king',
 }
 
+const availableStyles = [
+    "default",
+    "blue",
+    "red"
+];
+
 // Toggle debug messages
 var isDebug = false;
 
@@ -108,9 +114,12 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     
 
     // Initialize Trays
-    let $whiteTray = $("<div></div>").prop("id", "white_tray").addClass("tray"),
+    let $themeSelector = $("<select></select>").prop("id", "theme_selector"),
+        $whiteTray = $("<div></div>").prop("id", "white_tray").addClass("tray"),
         $blackTray = $("<div></div>").prop("id", "black_tray").addClass("tray");
-    $(boardSelector).before($whiteTray).after($blackTray);
+    availableStyles.forEach(s => $themeSelector.append("<option value='" + s + "'>" + s + "</option>"));
+    $themeSelector.on('change', changeTheme);
+    $(boardSelector).before($themeSelector, $whiteTray).after($blackTray);
 
     initializePieces();
     render();
@@ -534,4 +543,11 @@ function collisionDetected(fromPosition, toPosition) {
     console.info("To Position: (" + toPosition.r + ", " + toPosition.c + ")");
 
     return hasCollision;
+}
+
+function changeTheme() {
+
+
+    $('#board').removeClass(availableStyles.join(' ')).addClass($('#theme_selector').val());
+    showAlert("Theme updated", debug);
 }
