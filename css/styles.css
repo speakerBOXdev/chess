@@ -1,0 +1,65 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+header {
+    display: block;
+}
+
+aside, section {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.tile {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    font-size: 25px;
+    vertical-align: top;
+    text-align: center;
+    border-width: 2px;
+    border-style: solid;
+}
+.tile i {
+    padding-top: 10px;
+}
+
+.player-white {
+    color: #fff;
+}
+.player-black {
+    color: #000;
+}
+.dark {
+    background-color: #999;
+    border-color: #999;
+}
+.tile.selected {
+    border-color: goldenrod;
+}
+.tile.selected i {
+    padding-top: 15px;
+}
+.light {
+    background-color: #bbb;
+    border-color: #bbb;
+}
+.row {
+    display:block;
+}
+.row:after, .row:before {
+    content: " ";
+    display: block;
+}
+
+.alert {
+    padding: 25px;
+    border-radius: 10px;
+}
+.alert-info {
+    background-color: lightblue;
+}
+.alert-warning {
+    background-color: lightgoldenrodyellow;
+}
