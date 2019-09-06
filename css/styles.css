@@ -20,9 +20,7 @@ section {
     text-align: center;
     margin-top: 55px;
 }
-#board .row:first-child .marker:first-child {
-    margin-left:60px;
-}
+
 .marker {
     display: inline-block;
     vertical-align: middle;
@@ -53,12 +51,39 @@ section {
     padding-top: 10px;
 }
 
+.tray {
+    height: 35px;
+    background-color: #888;
+    font-size: 20px;
+}
+.tray i {
+    padding: 5px;
+}
+
+.player-white,.player-black {
+    text-shadow: #999 2px 2px 1px;
+}
+
+.player-white, .player-black {
+    opacity: .7;
+}
+.tray .player-white, .tray .player-black {
+    opacity: 1;
+}
+
 .player-white {
     color: #fff;
 }
 .player-black {
     color: #000;
 }
+
+.active-player-white .player-white,
+.active-player-black .player-black {
+    text-shadow: #999 5px 5px 2px;
+    opacity: 1;
+}
+
 .dark {
     background-color: #999;
     border-color: #999;
@@ -98,4 +123,13 @@ section {
 .alert-warning {
     background-color: lightgoldenrodyellow;
     border-color: goldenrod;
+}
+
+.blue .light {
+    background-color: lightblue;
+    border-color: lightblue;
+}
+.blue .dark {
+    background-color: skyblue;
+    border-color: skyblue;
 }

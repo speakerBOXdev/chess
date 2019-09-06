@@ -10,7 +10,7 @@ const pieceStyles = {
 }
 
 // Toggle debug messages
-var isDebug = true;
+var isDebug = false;
 
 
 const maxRows = 8, maxColumns = 8;
@@ -37,17 +37,18 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     $(alertSelector).append(
         $("<div></div>").prop('id', 'alerts')
     );
-    
+
     // Create row element to contain columns
     let $rowContainer = $("<div></div>");
     $rowContainer.addClass("row");
+    let columnMarkers = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
     for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
         
-        let gridMarker = $("<div></div>").text("C" + columnIndex).addClass("marker marker-row");
+        let gridMarker = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker marker-row");
         $rowContainer.append(gridMarker)
     }
-    $("#board").append($rowContainer);
-
+    $(boardSelector).append($rowContainer);
+    
     // Build rows for board
     for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
     
@@ -55,7 +56,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         let $rowContainer = $("<div></div>");
         $rowContainer.addClass("row");
 
-        let gridMarker = $("<div></div>").text("R" + rowIndex).addClass("marker marker-row");
+        let gridMarker = $("<div></div>").text(1 + rowIndex).addClass("marker marker-row");
         $rowContainer.append(gridMarker)
 
         let columns = [];
@@ -85,11 +86,32 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
             $rowContainer.append(tile);
         }
 
+        gridMarker = $("<div></div>").text(1 + rowIndex).addClass("marker marker-row");
+        $rowContainer.append(gridMarker)
+
         positions[rowIndex] =  columns;
 
         // Add row to board container
         $(boardSelector).append($rowContainer);
     }
+
+
+    // Create row element to contain columns
+    $rowContainer = $("<div></div>");
+    $rowContainer.addClass("row");
+    for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
+        
+        let gridMarker = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker marker-row");
+        $rowContainer.append(gridMarker)
+    }
+    $(boardSelector).append($rowContainer);
+    
+
+    // Initialize Trays
+    let $whiteTray = $("<div></div>").prop("id", "white_tray").addClass("tray"),
+        $blackTray = $("<div></div>").prop("id", "black_tray").addClass("tray");
+    $(boardSelector).before($whiteTray).after($blackTray);
+
     initializePieces();
     render();
 }
@@ -126,6 +148,12 @@ function movePiece(row, column) {
     // Finish Move
     } else {
 
+        if (fromPosition.r == row && fromPosition.c == column) {
+            $('#R' + fromPosition.r + 'C' + fromPosition.c).removeClass('selected');
+            fromPosition = null;
+            return;
+        }
+
         let nextPosition = { r: row, c: column, p: positions[row][column] };
 
         if (nextPosition.p.player === fromPosition.p.player) {
@@ -140,6 +168,7 @@ function movePiece(row, column) {
         if (validateMove(fromPosition, nextPosition)) {
 
             if (nextPosition.p.player != "none" && nextPosition.p.player != currentPlayer) {
+                $("#" + currentPlayer + "_tray").append($('#R' + nextPosition.r + 'C' + nextPosition.c).children());
                 showAlert(currentPlayer + " took " + nextPosition.p.player + "'s " + nextPosition.p.type);
                 if (nextPosition.p.type == 'king') {
                     showAlert(currentPlayer + " has won the game!");
@@ -151,7 +180,11 @@ function movePiece(row, column) {
             positions[row][column] = positions[fromPosition.r][fromPosition.c];
             positions[row][column].moveCount++;
             positions[fromPosition.r][fromPosition.c] = { type: 'empty', player: 'none' };
-            
+         
+            if (currentPlayer == 'white' && nextPosition.r == (maxRows -1)) {
+                showAlert("You should be able to get a piece back. This isn't working yet.");
+            }
+
             // Reset and change the active player
             $('#R' + fromPosition.r + 'C' + fromPosition.c).removeClass('selected');
             fromPosition = null;
@@ -163,6 +196,8 @@ function movePiece(row, column) {
 }
 
 function render() {
+
+    $('#board').removeClass("active-player-white active-player-black").addClass("active-player-" + currentPlayer);
 
     for (let r = 0; r < positions.length; r++) {
         for (let c = 0; c < positions[r].length; c++) {
