@@ -9,6 +9,17 @@ const pieceStyles = {
     'king': 'fas fa-chess-king',
 }
 
+const pieces = [
+    "rook",
+    "knight",
+    "bishop",
+    "queen",
+    "king",
+    "bishop",
+    "knight",
+    "rook"
+];
+
 const availableStyles = [
     "default",
     "blue",
@@ -18,7 +29,6 @@ const availableStyles = [
 // Toggle debug messages
 var isDebug = false;
 
-
 const maxRows = 8, maxColumns = 8;
 
 var fromPosition = null,
@@ -26,34 +36,62 @@ var fromPosition = null,
     currentPlayer = 'white',
     gameover = false;
 
-$(document).ready(function() {
-    initialize();
-});
+// Initialize the Chess game
+$(document).ready(() => initialize());
+
+/**
+ * @summary Update the board theme
+ * @param {string} boardSelector 
+ * @param {string} theme desired theme name
+ */
+function changeTheme(boardSelector, theme) {
+    $(boardSelector).removeClass(availableStyles.join(' ')).addClass(theme);
+}
 
 /**
  * @summary Initialize board
  * @description Creates elements within specified containers to render
  * the board and alert messages
- * @param boardSelector jQuery selector for element to place board
- * @param alertSelector jQuery selector for element to place alerts
+ * @param {string} boardSelector jQuery selector for element to place board
+ * @param {string} alertSelector jQuery selector for element to place alerts
  */
 function initialize(boardSelector = "#board", alertSelector = "#second") {
-     
+
+    let $boardWrapper = $(boardSelector),
+        $alertWrapper = $(alertSelector);
+
+    if (!$boardWrapper) { 
+        console.error("Board wrapper '" + boardSelector + "' was not found");
+        return;
+    }
+
+    if (!$alertWrapper) {
+        console.error("Alert wrapper '" + alertSelector + "' was not found");
+        return;
+    }
+
     // Add a container for alert messages
-    $(alertSelector).append(
+    $alertWrapper.append(
         $("<div></div>").prop('id', 'alerts')
     );
 
     // Create row element to contain columns
-    let $rowContainer = $("<div></div>");
-    $rowContainer.addClass("row");
+    let $markerRowTop = $("<div></div>"),
+        $markerRowBottom = $("<div></div>");
+
+    $markerRowTop.addClass("row marker-row marker-row-top");
+    $markerRowBottom.addClass("row marker-row marker-row-bottom");
+
     let columnMarkers = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
     for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
         
-        let gridMarker = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker marker-row");
-        $rowContainer.append(gridMarker)
+        let $gridMarkerTop = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker");
+        $gridMarkerBottom = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker");
+        $markerRowTop.append($gridMarkerTop);
+        $markerRowBottom.append($gridMarkerBottom);
     }
-    $(boardSelector).append($rowContainer);
+
+    $boardWrapper.append($markerRowTop);
     
     // Build rows for board
     for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
@@ -62,7 +100,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         let $rowContainer = $("<div></div>");
         $rowContainer.addClass("row");
 
-        let gridMarker = $("<div></div>").text(1 + rowIndex).addClass("marker marker-row");
+        let gridMarker = $("<div></div>").text(1 + rowIndex).addClass("marker");
         $rowContainer.append(gridMarker)
 
         let columns = [];
@@ -86,7 +124,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
             tile.addClass(tileClass);
 
             // Add tile event handlers
-            $(tile).on("click", () => movePiece(rowIndex, columnIndex) );
+            $(tile).on("click", () => { movePiece(rowIndex, columnIndex); render(boardSelector); } );
             
             // Add tile to row
             $rowContainer.append(tile);
@@ -98,19 +136,11 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         positions[rowIndex] =  columns;
 
         // Add row to board container
-        $(boardSelector).append($rowContainer);
+        $boardWrapper.append($rowContainer);
     }
 
-
-    // Create row element to contain columns
-    $rowContainer = $("<div></div>");
-    $rowContainer.addClass("row");
-    for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
-        
-        let gridMarker = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker marker-row");
-        $rowContainer.append(gridMarker)
-    }
-    $(boardSelector).append($rowContainer);
+    // Append the bottom marker row
+    $boardWrapper.append($markerRowBottom);
     
 
     // Initialize Trays
@@ -118,16 +148,17 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         $whiteTray = $("<div></div>").prop("id", "white_tray").addClass("tray"),
         $blackTray = $("<div></div>").prop("id", "black_tray").addClass("tray");
     availableStyles.forEach(s => $themeSelector.append("<option value='" + s + "'>" + s + "</option>"));
-    $themeSelector.on('change', changeTheme);
-    $(boardSelector).before($themeSelector, $whiteTray).after($blackTray);
+    $themeSelector.on('change', function () { changeTheme(boardSelector, this.value); });
+    
+    $boardWrapper.before($themeSelector, $whiteTray).after($blackTray);
 
     initializePieces();
-    render();
+    render(boardSelector);
 }
 
 /**
- * 
- * @param {number} row 
+ * @summary Begin or and a move based on location
+  * @param {number} row 
  * @param {number} column 
  */
 function movePiece(row, column) {
@@ -139,26 +170,26 @@ function movePiece(row, column) {
     
         if (positions[row][column].type === "empty")  {
 
-            showAlert("Nothing to move.", 'warning');
+            showAlert("Nothing to move.", "warning");
             return;
         } 
 
         if (positions[row][column].player !== currentPlayer) {
 
-            showAlert("It is not your turn.", 'warning');
+            showAlert("It is not your turn.", "warning");
             return;
         } 
 
         showAlert("Where do you want to move your " + positions[row][column].type + "?");
 
         fromPosition = { r: row, c: column, p: positions[row][column] };
-        $('#R' + row + 'C' + column).addClass('selected');
+        $("#R" + row + "C" + column).addClass("selected");
         
     // Finish Move
     } else {
 
         if (fromPosition.r == row && fromPosition.c == column) {
-            $('#R' + fromPosition.r + 'C' + fromPosition.c).removeClass('selected');
+            $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
             fromPosition = null;
             return;
         }
@@ -167,8 +198,8 @@ function movePiece(row, column) {
 
         if (nextPosition.p.player === fromPosition.p.player) {
             showAlert(fromPosition.p.player + " has decided to change piece from '" + fromPosition.p.type + "' to '" + nextPosition.p.type + "'.", 'debug');
-            $('#R' + fromPosition.r + 'C' + fromPosition.c).removeClass('selected');
-            $('#R' + nextPosition.r + 'C' + nextPosition.c).addClass('selected');
+            $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
+            $("#R" + nextPosition.r + "C" + nextPosition.c).addClass("selected");
             fromPosition = nextPosition;
             return;
         }
@@ -177,7 +208,7 @@ function movePiece(row, column) {
         if (validateMove(fromPosition, nextPosition)) {
 
             if (nextPosition.p.player != "none" && nextPosition.p.player != currentPlayer) {
-                $("#" + currentPlayer + "_tray").append($('#R' + nextPosition.r + 'C' + nextPosition.c).children());
+                $("#" + currentPlayer + "_tray").append($("#R" + nextPosition.r + "C" + nextPosition.c).children());
                 showAlert(currentPlayer + " took " + nextPosition.p.player + "'s " + nextPosition.p.type);
                 if (nextPosition.p.type == 'king') {
                     showAlert(currentPlayer + " has won the game!");
@@ -188,25 +219,27 @@ function movePiece(row, column) {
             // Swap the positions for the piece
             positions[row][column] = positions[fromPosition.r][fromPosition.c];
             positions[row][column].moveCount++;
-            positions[fromPosition.r][fromPosition.c] = { type: 'empty', player: 'none' };
+            positions[fromPosition.r][fromPosition.c] = { type: "empty", player: "none" };
          
-            if (currentPlayer == 'white' && nextPosition.r == (maxRows -1)) {
+            if (currentPlayer == "white" && nextPosition.r == (maxRows -1)) {
                 showAlert("You should be able to get a piece back. This isn't working yet.");
             }
 
             // Reset and change the active player
-            $('#R' + fromPosition.r + 'C' + fromPosition.c).removeClass('selected');
+            $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
             fromPosition = null;
             currentPlayer = (currentPlayer === "white") ? "black" : "white";
-            
-            render();
         }
     }
 }
 
-function render() {
+/**
+ * @summary Position pieces on the board
+ * @param {string} boardSelector 
+ */
+function render(boardSelector) {
 
-    $('#board').removeClass("active-player-white active-player-black").addClass("active-player-" + currentPlayer);
+    $(boardSelector).removeClass("active-player-white active-player-black").addClass("active-player-" + currentPlayer);
 
     for (let r = 0; r < positions.length; r++) {
         for (let c = 0; c < positions[r].length; c++) {
@@ -225,80 +258,30 @@ function render() {
     }
 }
 
+/**
+ * @summary Build initial state of all pieces in play
+ */
 function initializePieces() {
+    for (let i = 0; i < maxColumns; i++) {
+        positions[0][i].player = "white";
+        positions[0][i].type = pieces[i];
 
-    positions[0][0].player = "white";
-    positions[0][1].player = "white";
-    positions[0][2].player = "white";
-    positions[0][3].player = "white";
-    positions[0][4].player = "white";
-    positions[0][5].player = "white";
-    positions[0][6].player = "white";
-    positions[0][7].player = "white";
-    positions[1][0].player = "white";
-    positions[1][1].player = "white";
-    positions[1][2].player = "white";
-    positions[1][3].player = "white";
-    positions[1][4].player = "white";
-    positions[1][5].player = "white";
-    positions[1][6].player = "white";
-    positions[1][7].player = "white";
+        positions[1][i].player = "white";
+        positions[1][i].type = "pawn";
+        
+        positions[maxRows -2][i].player = "black";        
+        positions[maxRows -2][i].type = "pawn";
 
-
-    positions[6][0].player = "black";
-    positions[6][1].player = "black";
-    positions[6][2].player = "black";
-    positions[6][3].player = "black";
-    positions[6][4].player = "black";
-    positions[6][5].player = "black";
-    positions[6][6].player = "black";
-    positions[6][7].player = "black";
-    positions[7][0].player = "black";
-    positions[7][1].player = "black";
-    positions[7][2].player = "black";
-    positions[7][3].player = "black";
-    positions[7][4].player = "black";
-    positions[7][5].player = "black";
-    positions[7][6].player = "black";
-    positions[7][7].player = "black";
-
-    positions[0][0].type = "rook";
-    positions[0][1].type = "knight";
-    positions[0][2].type = "bishop";
-    positions[0][3].type = "queen";
-    positions[0][4].type = "king";
-    positions[0][5].type = "bishop";
-    positions[0][6].type = "knight";
-    positions[0][7].type = "rook";
-
-    positions[1][0].type = "pawn";
-    positions[1][1].type = "pawn";
-    positions[1][2].type = "pawn";
-    positions[1][3].type = "pawn";
-    positions[1][4].type = "pawn";
-    positions[1][5].type = "pawn";
-    positions[1][6].type = "pawn";
-    positions[1][7].type = "pawn";
-
-    positions[6][0].type = "pawn";
-    positions[6][1].type = "pawn";
-    positions[6][2].type = "pawn";
-    positions[6][3].type = "pawn";
-    positions[6][4].type = "pawn";
-    positions[6][5].type = "pawn";
-    positions[6][6].type = "pawn";
-    positions[6][7].type = "pawn";
-
-    positions[7][0].type = "rook";
-    positions[7][1].type = "knight";
-    positions[7][2].type = "bishop";
-    positions[7][3].type = "queen";
-    positions[7][4].type = "king";
-    positions[7][5].type = "bishop";
-    positions[7][6].type = "knight";
-    positions[7][7].type = "rook";
+        positions[maxRows -1][i].player = "black";
+        positions[maxRows -1][i].type = pieces[i];
+    }
 }
 
+/**
+ * @summary Posts a message in the alerts container
+ * @param {string} message Message to display 
+ * @param {string} type determines styling and display; (info|warning|debug) default 'info'
+ */
 function showAlert(message, type = "info") {
 
     if (type === "debug" && !isDebug) { return; }
@@ -310,6 +293,12 @@ function showAlert(message, type = "info") {
     $("#alerts").append($alert);
 }
 
+/**
+ * @summary Determine if move is valid or not
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @returns true if move is valid; otherwise, false
+ */
 function validateMove(fromPosition, toPosition) {
 
     let isValidMove = true;
@@ -317,15 +306,15 @@ function validateMove(fromPosition, toPosition) {
     let colorMultiplier = (currentPlayer === "white") ? 1 : -1;
 
     switch (fromPosition.p.type) {
-        case 'pawn':
+        case "pawn":
 
             // isMoveForward()
-            // && isMoveSingle()
+            // && isMoveOfLimitedSpaces(fromPosition, toPosition, allowedRowChange)
             // && isMoveVertical()
             // && !collisionDetected();
 
             let allowedRowChange = (fromPosition.p.moveCount > 0) ? 1 : 2;
-
+            
             let rowDiff = (toPosition.r - fromPosition.r) * colorMultiplier;
             if (rowDiff > allowedRowChange) {
                 warningMessage = "Cannot change move forward more than " + allowedRowChange + " row.";
@@ -342,7 +331,7 @@ function validateMove(fromPosition, toPosition) {
             } else if (rowDiff < 1) {
                 warningMessage = "Cannot move backwards.";
                 isValidMove = false;
-            } else if (toPosition.p.type != 'empty') {
+            } else if (toPosition.p.type != "empty") {
                 warningMessage = "Cannot take piece straight on.";
                 isValidMove = false;
             }
@@ -457,12 +446,25 @@ function isMoveLShaped(fromPosition, toPosition) {
     return response;
 }
 
+/**
+ * @summary Determine if 
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @returns true if path is forward with respect to player's orientation; otherwise, false
+ */
 function isMoveFoward(fromPosition, toPosition) {
     let response = false;
 
     return response;
 }
 
+/**
+ * @summary Determine if move is less that the number of spaces
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @param {number} limit Number of spaces allowed
+ * @returns true if path is less than or equal to {limit}; otherwise, false
+ */
 function isMoveOfLimitedSpaces(fromPosition, toPosition, limit) {
     let response = false,
     rdiff = Math.abs(fromPosition.r - toPosition.r),
@@ -475,6 +477,12 @@ function isMoveOfLimitedSpaces(fromPosition, toPosition, limit) {
     return response;
 }
 
+/**
+ * @summary  Determines if path between two positions is diagonal
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @returns true if path is diagonal; otherwise, false
+ */
 function isMoveDiagonal(fromPosition, toPosition) {
     let response = false,
     rdiff = Math.abs(fromPosition.r - toPosition.r),
@@ -487,6 +495,12 @@ function isMoveDiagonal(fromPosition, toPosition) {
     return response;
 }
 
+/**
+ * @summary Determines if path between two positions is strictly horizontal
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @returns true if path is horizontal; otherwise, false
+ */
 function isMoveHorizontal(fromPosition, toPosition) {
     let response = false;
     if (fromPosition.r == toPosition.r 
@@ -496,6 +510,12 @@ function isMoveHorizontal(fromPosition, toPosition) {
     return response;
 }
 
+/**
+ * @summary Determines if path between two positions is strictly vertical
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @returns true if path is vertical; otherwise, false
+ */
 function isMoveVertical(fromPosition, toPosition) {
     let response = false;
     if (fromPosition.c == toPosition.c 
@@ -505,12 +525,15 @@ function isMoveVertical(fromPosition, toPosition) {
     return response;
 }
 
+/**
+ * @summary Detect a collision on the path between two positions
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ * @returns true if collision is detected; otherwise, false
+ */
 function collisionDetected(fromPosition, toPosition) {
 
-    let currentPiece = fromPosition.p,
-        hasCollision = false;
-
-    console.info("From Position: (" + fromPosition.r + ", " + fromPosition.c + ")");
+    let hasCollision = false;
 
     let rmove = (fromPosition.r > toPosition.r) ? -1 : (fromPosition.r < toPosition.r) ? 1 : 0;
     let cmove = (fromPosition.c > toPosition.c) ? -1 : (fromPosition.c < toPosition.c) ? 1 : 0;
@@ -521,11 +544,8 @@ function collisionDetected(fromPosition, toPosition) {
         p: positions[fromPosition.r + rmove][fromPosition.c + cmove]
     };
 
-    let counter = 0;
     while (nextPiece.r != toPosition.r || nextPiece.c != toPosition.c) {
-    
-        console.info("Checking nextPiece: (" + nextPiece.r + ", " + nextPiece.c + ") has '" + nextPiece.p.type + "'");
-        if (nextPiece.p.type != 'empty') {
+        if (nextPiece.p.type != "empty") {
             hasCollision = true;
             break;
         }
@@ -533,21 +553,8 @@ function collisionDetected(fromPosition, toPosition) {
             r: nextPiece.r + rmove, 
             c: nextPiece.c + cmove, 
             p: positions[nextPiece.r + rmove][nextPiece.c + cmove]
-        };    
-        if (counter++ > 70) {
-            throw "We've GONE TOO FAR"; 
-            break;
-        }
+        };
     }
 
-    console.info("To Position: (" + toPosition.r + ", " + toPosition.c + ")");
-
     return hasCollision;
-}
-
-function changeTheme() {
-
-
-    $('#board').removeClass(availableStyles.join(' ')).addClass($('#theme_selector').val());
-    showAlert("Theme updated", debug);
 }
