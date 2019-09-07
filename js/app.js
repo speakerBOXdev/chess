@@ -166,21 +166,21 @@ function movePiece(row, column) {
     // Start Move
     if (!fromPosition) {
     
-        if (positions[row][column].type === "empty")  {
+        let position = positions[row][column];
 
+        if (position.type === "empty")  {
             showAlert("Nothing to move.", "warning");
             return;
         } 
 
-        if (positions[row][column].player !== currentPlayer) {
-
+        if (position.player !== currentPlayer) {
             showAlert("It is not your turn.", "warning");
             return;
         } 
 
-        showAlert("Where do you want to move your " + positions[row][column].type + "?");
+        showAlert("Where do you want to move your " + position.type + "?");
 
-        fromPosition = { r: row, c: column, p: positions[row][column] };
+        fromPosition = { r: row, c: column, p: position };
         $("#R" + row + "C" + column).addClass("selected");
         
     // Finish Move
