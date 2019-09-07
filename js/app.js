@@ -306,31 +306,31 @@ function validateMove(fromPosition, toPosition) {
     switch (fromPosition.p.type) {
         case "pawn":
 
-            // isMoveForward()
-            // && isMoveOfLimitedSpaces(fromPosition, toPosition, allowedRowChange)
-            // && isMoveVertical()
-            // && !collisionDetected();
-
             let allowedRowChange = (fromPosition.p.moveCount > 0) ? 1 : 2;
             
             let rowDiff = (toPosition.r - fromPosition.r) * colorMultiplier;
-            if (rowDiff > allowedRowChange) {
-                warningMessage = "Cannot change move forward more than " + allowedRowChange + " row.";
-                isValidMove = false;
-            } else if (toPosition.c != fromPosition.c) {
-                // Allow for taking another player on a diagonal
-                if (rowDiff == 1 &&
-                    (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
-                    && toPosition.p.player != currentPlayer && toPosition.p.player != "none")) {
-                    break;
+
+            if (isMoveForward(fromPosition, toPosition)) {
+
+                if (!isMoveOfLimitedSpaces(fromPosition, toPosition, allowedRowChange)) {
+                    warningMessage = "Cannot change move forward more than " + allowedRowChange + " row.";
+                    isValidMove = false;
+                } else if (isMoveDiagonal(fromPosition,toPosition)) {
+                    // Allow for taking another player on a diagonal
+                    if (isMoveOfLimitedSpaces(fromPosition, toPosition, 1)
+                        && (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
+                            && toPosition.p.player != currentPlayer && toPosition.p.player != "none")) {
+                        break;
+                    }
+                    warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
+                    isValidMove = false;    
+                } else if (toPosition.p.type != "empty") {
+                    warningMessage = "Cannot take a player straight on.";
+                    isValidMove = false;    
                 }
-                warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
-                isValidMove = false;
-            } else if (rowDiff < 1) {
-                warningMessage = "Cannot move backwards.";
-                isValidMove = false;
-            } else if (toPosition.p.type != "empty") {
-                warningMessage = "Cannot take piece straight on.";
+
+            } else {
+                warningMessage = "Cannot move backward.";
                 isValidMove = false;
             }
             
@@ -450,8 +450,15 @@ function isMoveLShaped(fromPosition, toPosition) {
  * @param {*} toPosition 
  * @returns true if path is forward with respect to player's orientation; otherwise, false
  */
-function isMoveFoward(fromPosition, toPosition) {
+function isMoveForward(fromPosition, toPosition) {
     let response = false;
+
+    let directionMultiplier = (fromPosition.p.player == "white") ? 1 : -1,
+        rdiff = (toPosition.r - fromPosition.r) * directionMultiplier;
+    
+    if (rdiff > 0) {
+        response = true;
+    }
 
     return response;
 }
