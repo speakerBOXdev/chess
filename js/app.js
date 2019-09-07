@@ -1,12 +1,12 @@
 
 const pieceStyles = {
-    'empty': '',
-    'pawn': 'fas fa-chess-pawn',
-    'knight': 'fas fa-chess-knight',
-    'rook': 'fas fa-chess-rook',
-    'bishop': 'fas fa-chess-bishop',
-    'queen': 'fas fa-chess-queen',
-    'king': 'fas fa-chess-king',
+    "empty": "",
+    "pawn": "fas fa-chess-pawn",
+    "knight": "fas fa-chess-knight",
+    "rook": "fas fa-chess-rook",
+    "bishop": "fas fa-chess-bishop",
+    "queen": "fas fa-chess-queen",
+    "king": "fas fa-chess-king",
 }
 
 const pieces = [
@@ -33,7 +33,7 @@ const maxRows = 8, maxColumns = 8;
 
 var fromPosition = null,
     positions = [],
-    currentPlayer = 'white',
+    currentPlayer = "white",
     gameover = false;
 
 // Initialize the Chess game
@@ -45,7 +45,7 @@ $(document).ready(() => initialize());
  * @param {string} theme desired theme name
  */
 function changeTheme(boardSelector, theme) {
-    $(boardSelector).removeClass(availableStyles.join(' ')).addClass(theme);
+    $(boardSelector).removeClass(availableStyles.join(" ")).addClass(theme);
 }
 
 /**
@@ -71,9 +71,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     }
 
     // Add a container for alert messages
-    $alertWrapper.append(
-        $("<div></div>").prop('id', 'alerts')
-    );
+    $alertWrapper.append($("<div></div>").prop("id", "alerts"));
 
     // Create row element to contain columns
     let $markerRowTop = $("<div></div>"),
@@ -82,7 +80,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     $markerRowTop.addClass("row marker-row marker-row-top");
     $markerRowBottom.addClass("row marker-row marker-row-bottom");
 
-    let columnMarkers = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
+    let columnMarkers = [ "a", "b", "c", "d", "e", "f", "g", "h" ];
     for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
         
         let $gridMarkerTop = $("<div></div>").text(columnMarkers[columnIndex]).addClass("marker");
@@ -107,15 +105,15 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         // Build columns for board
         for (let columnIndex = 0; columnIndex < maxColumns; columnIndex++) {
             
-            columns.push( { row: rowIndex, column: columnIndex, type: 'empty', player: 'none', moveCount: 0 });
+            columns.push( { row: rowIndex, column: columnIndex, type: "empty", player: "none", moveCount: 0 });
 
             // Create new tile
             let tile = $("<div></div>");
-            tile.prop('id', "R" + rowIndex + "C" + columnIndex);
+            tile.prop("id", "R" + rowIndex + "C" + columnIndex);
             tile.addClass("tile");
 
-            // Set the tile css; default to 'dark'; 
-            // Alternate 'light' for odd row and even column or even row and odd column
+            // Set the tile css; default to "dark"; 
+            // Alternate "light" for odd row and even column or even row and odd column
             let tileClass = "dark";
             if ((rowIndex % 2 === 1 && columnIndex % 2 === 0) 
                 || (rowIndex % 2 === 0 && columnIndex % 2 === 1)) {
@@ -148,7 +146,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
         $whiteTray = $("<div></div>").prop("id", "white_tray").addClass("tray"),
         $blackTray = $("<div></div>").prop("id", "black_tray").addClass("tray");
     availableStyles.forEach(s => $themeSelector.append("<option value='" + s + "'>" + s + "</option>"));
-    $themeSelector.on('change', function () { changeTheme(boardSelector, this.value); });
+    $themeSelector.on("change", function () { changeTheme(boardSelector, this.value); });
     
     $boardWrapper.before($themeSelector, $whiteTray).after($blackTray);
 
@@ -197,7 +195,7 @@ function movePiece(row, column) {
         let nextPosition = { r: row, c: column, p: positions[row][column] };
 
         if (nextPosition.p.player === fromPosition.p.player) {
-            showAlert(fromPosition.p.player + " has decided to change piece from '" + fromPosition.p.type + "' to '" + nextPosition.p.type + "'.", 'debug');
+            showAlert(fromPosition.p.player + " has decided to change piece from '" + fromPosition.p.type + "' to '" + nextPosition.p.type + "'.", "debug");
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
             $("#R" + nextPosition.r + "C" + nextPosition.c).addClass("selected");
             fromPosition = nextPosition;
@@ -210,7 +208,7 @@ function movePiece(row, column) {
             if (nextPosition.p.player != "none" && nextPosition.p.player != currentPlayer) {
                 $("#" + currentPlayer + "_tray").append($("#R" + nextPosition.r + "C" + nextPosition.c).children());
                 showAlert(currentPlayer + " took " + nextPosition.p.player + "'s " + nextPosition.p.type);
-                if (nextPosition.p.type == 'king') {
+                if (nextPosition.p.type == "king") {
                     showAlert(currentPlayer + " has won the game!");
                     gameover = true;
                 }
@@ -280,7 +278,7 @@ function initializePieces() {
 /**
  * @summary Posts a message in the alerts container
  * @param {string} message Message to display 
- * @param {string} type determines styling and display; (info|warning|debug) default 'info'
+ * @param {string} type determines styling and display; (info|warning|debug) default "info"
  */
 function showAlert(message, type = "info") {
 
@@ -323,7 +321,7 @@ function validateMove(fromPosition, toPosition) {
                 // Allow for taking another player on a diagonal
                 if (rowDiff == 1 &&
                     (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
-                    && toPosition.p.player != currentPlayer && toPosition.p.player != 'none')) {
+                    && toPosition.p.player != currentPlayer && toPosition.p.player != "none")) {
                     break;
                 }
                 warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
@@ -375,7 +373,7 @@ function validateMove(fromPosition, toPosition) {
 
             break;
         case "knight":
-            // Allowed to take 'L' shaped move and jump over pieces.
+            // Allowed to take "L" shaped move and jump over pieces.
 
             if (!isMoveLShaped(fromPosition, toPosition)) {
                 isValidMove = false;
