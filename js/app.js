@@ -299,119 +299,76 @@ function showAlert(message, type = "info") {
  */
 function validateMove(fromPosition, toPosition) {
 
-    let isValidMove = true;
+    let isValidMove = false;
     let warningMessage = "";
-    let colorMultiplier = (currentPlayer === "white") ? 1 : -1;
 
     switch (fromPosition.p.type) {
         case "pawn":
 
+            // Allow for up to two row changes on first move
             let allowedRowChange = (fromPosition.p.moveCount > 0) ? 1 : 2;
-            
-            let rowDiff = (toPosition.r - fromPosition.r) * colorMultiplier;
-
             if (isMoveForward(fromPosition, toPosition)) {
 
                 if (!isMoveOfLimitedSpaces(fromPosition, toPosition, allowedRowChange)) {
                     warningMessage = "Cannot change move forward more than " + allowedRowChange + " row.";
                     isValidMove = false;
+                    break;
                 } else if (isMoveDiagonal(fromPosition,toPosition)) {
                     // Allow for taking another player on a diagonal
                     if (isMoveOfLimitedSpaces(fromPosition, toPosition, 1)
                         && (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
                             && toPosition.p.player != currentPlayer && toPosition.p.player != "none")) {
+                        isValidMove = true;
                         break;
                     }
                     warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
                     isValidMove = false;    
+                    break;
                 } else if (toPosition.p.type != "empty") {
                     warningMessage = "Cannot take a player straight on.";
                     isValidMove = false;    
+                    break;
                 }
 
             } else {
                 warningMessage = "Cannot move backward.";
                 isValidMove = false;
+                break;
             }
             
-            if (collisionDetected(fromPosition, toPosition)) {
-                warningMessage = "There is a piece in the way";
-                isValidMove = false;
-            }
-
+            isValidMove = true;
             break;
         case "bishop":
             // Allowed to move in diagonal direction
-
-            if (!isMoveDiagonal(fromPosition, toPosition)) {
-                isValidMove = false;
-                warningMessage = "Must move diagonally";
-                break;
-            }
-            
-            if (collisionDetected(fromPosition, toPosition)) {
-                isValidMove = false;
-                warningMessage = "There is a piece in the way";
-                break;
-            }
-            
+            isValidMove = isMoveDiagonal(fromPosition, toPosition);
+            warningMessage = "Move must be diagonal.";
             break;
         case "rook":
             // Allowed to move laterally
-            if (!isMoveHorizontal(fromPosition, toPosition)
-                && !isMoveVertical(fromPosition, toPosition)) {
-                warningMessage = "Cannot move diagonally.";
-                isValidMove = false;    
-                break;
-            }
-            
-            if (collisionDetected(fromPosition, toPosition)) {
-                warningMessage = "There is a piece in the way";
-                isValidMove = false;
-                break;
-            }
-
+            isValidMove = (isMoveHorizontal(fromPosition, toPosition)
+                || isMoveVertical(fromPosition, toPosition));
+                warningMessage = "Move must be vertical or horizontal.";
             break;
         case "knight":
             // Allowed to take "L" shaped move and jump over pieces.
-
-            if (!isMoveLShaped(fromPosition, toPosition)) {
-                isValidMove = false;
-                warningMessage = "This is not an 'L' shaped move.";
-                break;
-            }
-
+            isValidMove = isMoveLShaped(fromPosition, toPosition);
+            warningMessage = "This is not an 'L' shaped move.";
             break;
         case "queen":
             // Allowed to move any direction
-            if (!(isMoveDiagonal(fromPosition, toPosition)
+            isValidMove = (isMoveDiagonal(fromPosition, toPosition)
                 || isMoveVertical(fromPosition, toPosition)
-                || isMoveHorizontal(fromPosition, toPosition))) {
-                warningMessage = "Must be a straight line.";
-                isValidMove = false;
-                break;
-            }
-            if (collisionDetected(fromPosition, toPosition)) {
-                warningMessage = "There is a piece in the way";
-                isValidMove = false;
-                break;
-            }
-
+                || isMoveHorizontal(fromPosition, toPosition));
+            
             break;
         case "king":
             // Allowed to move any direction only one space
-            if (!(isMoveDiagonal(fromPosition, toPosition)
-                || isMoveVertical(fromPosition, toPosition)
-                || isMoveHorizontal(fromPosition, toPosition))) {
-                warningMessage = "Must be a straight line.";
-                isValidMove = false;
-                break;
-            }
             let allowedChange = 1;
-            if (!isMoveOfLimitedSpaces(fromPosition, toPosition, allowedChange)) {
-                warningMessage = "Move cannot be more than " + allowedChange + " space";
-                isValidMove = false;
-            }
+            isValidMove = (isMoveDiagonal(fromPosition, toPosition)
+                || isMoveVertical(fromPosition, toPosition)
+                || isMoveHorizontal(fromPosition, toPosition))
+                && isMoveOfLimitedSpaces(fromPosition, toPosition, allowedChange);
+            
             break;
         default:
             warningMessage = "Unknown piece.";
@@ -419,9 +376,15 @@ function validateMove(fromPosition, toPosition) {
             break;
     }
 
+    let collisions = ["queen", "bishop", "rook", "pawn"];
+    if (isValidMove && collisions.includes(fromPosition.p.type)
+        && collisionDetected(fromPosition, toPosition)) {
+        isValidMove = false;
+        warningMessage = "There is a piece in the way.";
+    }
+
     if (isValidMove) {
         let msg = "Valid move for '" + fromPosition.p.type + "'.";
-        
         showAlert(msg, "debug");
     } else {
         if (!warningMessage) { warningMessage = "unknown problem"; }
@@ -431,6 +394,11 @@ function validateMove(fromPosition, toPosition) {
     return isValidMove;
 }
 
+/**
+ * @summary Determine if move is 'L' shaped for knight
+ * @param {*} fromPosition 
+ * @param {*} toPosition 
+ */
 function isMoveLShaped(fromPosition, toPosition) {
     let response = false,
     rdiff = Math.abs(fromPosition.r - toPosition.r),
