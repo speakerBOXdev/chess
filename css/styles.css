@@ -20,7 +20,14 @@ section {
     text-align: center;
     margin-top: 55px;
 }
-
+select {
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    text-transform: capitalize;
+    background-color: aliceblue;
+    margin: 10px;
+}
 .marker {
     display: inline-block;
     vertical-align: middle;
@@ -64,6 +71,10 @@ section {
     text-shadow: #999 2px 2px 1px;
 }
 
+.dark .player-white, .dark .player-black {
+    text-shadow: #666 2px 2px 1px;
+}
+
 .player-white, .player-black {
     opacity: .7;
 }
@@ -83,6 +94,9 @@ section {
     text-shadow: #999 5px 5px 2px;
     opacity: 1;
 }
+.active-player-black .dark .player-black, .active-player-white .dark .player-white {
+    text-shadow: #666 5px 5px 2px;
+}
 
 .dark {
     background-color: #999;
@@ -91,9 +105,27 @@ section {
 .tile.selected {
     border-color: goldenrod;
 }
-.tile.selected i {
+.tile.selected i.player-white {
     padding-top: 15px;
 }
+
+.tile.selected i.player-black {
+    padding-top: 5px;
+}
+.tile.from, .move-history .from {
+    border-color: orange;
+}
+.tile.to, .move-history .to {
+    border-color: darkorange;
+}
+.tile.valid {
+    border-color: red;
+}
+
+.tile.checked {
+    border-color: blue;
+}
+
 .light {
     background-color: #bbb;
     border-color: #bbb;
@@ -141,4 +173,15 @@ section {
 .red .dark {
     background-color: maroon;
     border-color: maroon;
+}
+
+.move-history {
+    padding: 10px;
+    background-color: #999;
+}
+
+.move-history .to, .move-history .from {
+    border-width: 1px;
+    border-style: solid;
+    margin: 0 25px;
 }

@@ -33,6 +33,7 @@ const maxRows = 8, maxColumns = 8;
 
 var fromPosition = null,
     positions = [],
+    moveHistory = [],
     currentPlayer = "white",
     gameover = false;
 
@@ -142,13 +143,15 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     
 
     // Initialize Trays
-    let $themeSelector = $("<select></select>").prop("id", "theme_selector"),
+    let $themingWrapper = $("<div></div>"),
+        $themeLabel = $("<label></label>").prop("for",  "theme_selector").text("Theme"),
+        $themeSelector = $("<select></select>").prop("id", "theme_selector"),
         $whiteTray = $("<div></div>").prop("id", "white_tray").addClass("tray"),
         $blackTray = $("<div></div>").prop("id", "black_tray").addClass("tray");
     availableStyles.forEach(s => $themeSelector.append("<option value='" + s + "'>" + s + "</option>"));
     $themeSelector.on("change", function () { changeTheme(boardSelector, this.value); });
-    
-    $boardWrapper.before($themeSelector, $whiteTray).after($blackTray);
+    $themingWrapper.append($themeLabel, $themeSelector);
+    $boardWrapper.before($themingWrapper, $whiteTray).after($blackTray);
 
     initializePieces();
     render(boardSelector);
@@ -182,12 +185,14 @@ function movePiece(row, column) {
 
         fromPosition = { r: row, c: column, p: position };
         $("#R" + row + "C" + column).addClass("selected");
+        showValidMove(fromPosition);
         
     // Finish Move
     } else {
 
         if (fromPosition.r == row && fromPosition.c == column) {
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
+            showValidMove(fromPosition, false);
             fromPosition = null;
             return;
         }
@@ -198,6 +203,8 @@ function movePiece(row, column) {
             showAlert(fromPosition.p.player + " has decided to change piece from '" + fromPosition.p.type + "' to '" + nextPosition.p.type + "'.", "debug");
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
             $("#R" + nextPosition.r + "C" + nextPosition.c).addClass("selected");
+            showValidMove(fromPosition, false);
+            showValidMove(nextPosition);
             fromPosition = nextPosition;
             return;
         }
@@ -223,12 +230,30 @@ function movePiece(row, column) {
                 showAlert("You should be able to get a piece back. This isn't working yet.");
             }
 
+            moveHistory.push({ f: fromPosition, t: nextPosition });
+
             // Reset and change the active player
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
+            showValidMove(fromPosition, false);
             fromPosition = null;
             currentPlayer = (currentPlayer === "white") ? "black" : "white";
         }
     }
+}
+
+function showValidMove(fromPosition, show = true) {
+    if (!fromPosition) {
+        throw "Argument Null: fromPosition";
+    }
+
+    positions.forEach((row, rowIndex) => row.forEach((position, columnIndex) => {
+        
+        let toPosition = { r: rowIndex, c: columnIndex, p: position };
+        $("#R" + toPosition.r + "C" + toPosition.c).removeClass("valid")
+        if (show && validateMove(fromPosition, toPosition, false)) {
+            $("#R" + toPosition.r + "C" + toPosition.c).addClass("valid")
+        }
+    }))
 }
 
 /**
@@ -253,6 +278,35 @@ function render(boardSelector) {
 
     if (!gameover) {
         showAlert("It is your turn " + currentPlayer);
+    }
+
+    $("#first").empty()
+    moveHistory.forEach((m, i) => {
+        let $row = $("<div></div>").prop("id", "move_" + i).addClass("move-history");
+
+        let fromSpan = $("<span></span>").addClass("from").text( m.f.r + "," + m.f.c ),
+        toSpan = $("<span></span>").addClass("to").text( m.t.r + "," + m.t.c ),
+        pieceIcon = $("<i></i>").addClass(pieceStyles[m.f.p.type] + " player-" + m.f.p.player),
+        arrowIcon = $("<i></i>").addClass("fas fa-arrow-right");
+        $row.append(pieceIcon,fromSpan, arrowIcon,toSpan);
+
+        $row.on("mouseover", function() { showMove(i);});
+        $row.on("mouseout", function() { showMove(i, false);});
+        $("#first").append($row );
+    });
+}
+
+function showMove(index, show = true) {
+    let m = moveHistory[index];
+    let $from = $("#R" + m.f.r + "C" + m.f.c),
+        $to = $("#R" + m.t.r + "C" + m.t.c);
+    
+    if (show) {
+        $from.addClass("from");
+        $to.addClass("to");
+    } else {
+        $from.removeClass("from");
+        $to.removeClass("to");
     }
 }
 
@@ -297,10 +351,14 @@ function showAlert(message, type = "info") {
  * @param {*} toPosition 
  * @returns true if move is valid; otherwise, false
  */
-function validateMove(fromPosition, toPosition) {
+function validateMove(fromPosition, toPosition, verbose = true) {
 
     let isValidMove = false;
     let warningMessage = "";
+
+    if (toPosition.p.player == currentPlayer) {
+        return false;
+    }
 
     switch (fromPosition.p.type) {
         case "pawn":
@@ -308,35 +366,16 @@ function validateMove(fromPosition, toPosition) {
             // Allow for up to two row changes on first move
             let allowedRowChange = (fromPosition.p.moveCount > 0) ? 1 : 2;
             if (isMoveForward(fromPosition, toPosition)) {
-
-                if (!isMoveOfLimitedSpaces(fromPosition, toPosition, allowedRowChange)) {
-                    warningMessage = "Cannot change move forward more than " + allowedRowChange + " row.";
-                    isValidMove = false;
-                    break;
-                } else if (isMoveDiagonal(fromPosition,toPosition)) {
-                    // Allow for taking another player on a diagonal
-                    if (isMoveOfLimitedSpaces(fromPosition, toPosition, 1)
-                        && (((toPosition.c == fromPosition.c + 1) || (toPosition.c == fromPosition.c - 1))
-                            && toPosition.p.player != currentPlayer && toPosition.p.player != "none")) {
-                        isValidMove = true;
-                        break;
-                    }
-                    warningMessage = "Cannot change columns from '" + fromPosition.c + "' to '" + toPosition.c + "'.";
-                    isValidMove = false;    
-                    break;
-                } else if (toPosition.p.type != "empty") {
-                    warningMessage = "Cannot take a player straight on.";
-                    isValidMove = false;    
-                    break;
-                }
-
-            } else {
-                warningMessage = "Cannot move backward.";
-                isValidMove = false;
-                break;
+                // Valid forward move
+                isValidMove = (isMoveVertical(fromPosition, toPosition)
+                && isMoveOfLimitedSpaces(fromPosition, toPosition, allowedRowChange)
+                && toPosition.p.player == "none")
+                // Valid takeover
+                || (isMoveDiagonal(fromPosition, toPosition)
+                    && isMoveOfLimitedSpaces(fromPosition, toPosition, 1)
+                    && toPosition.p.player != "none");
             }
             
-            isValidMove = true;
             break;
         case "bishop":
             // Allowed to move in diagonal direction
@@ -383,10 +422,11 @@ function validateMove(fromPosition, toPosition) {
         warningMessage = "There is a piece in the way.";
     }
 
-    if (isValidMove) {
+    if (isValidMove && verbose) {
         let msg = "Valid move for '" + fromPosition.p.type + "'.";
         showAlert(msg, "debug");
-    } else {
+    } else if (verbose) {
+        
         if (!warningMessage) { warningMessage = "unknown problem"; }
         showAlert("Invalid move for '" + fromPosition.p.type + "'. " + warningMessage, "warning");
     }
@@ -518,15 +558,25 @@ function collisionDetected(fromPosition, toPosition) {
     };
 
     while (nextPiece.r != toPosition.r || nextPiece.c != toPosition.c) {
+        
         if (nextPiece.p.type != "empty") {
             hasCollision = true;
             break;
         }
-        nextPiece = {
-            r: nextPiece.r + rmove, 
-            c: nextPiece.c + cmove, 
-            p: positions[nextPiece.r + rmove][nextPiece.c + cmove]
-        };
+        let nextR = nextPiece.r + rmove,
+            nextC = nextPiece.c + cmove,
+            nextP = positions[nextR][nextC];
+
+        if (nextP) {
+            nextPiece = {
+                r: nextPiece.r + rmove, 
+                c: nextPiece.c + cmove, 
+                p: positions[nextPiece.r + rmove][nextPiece.c + cmove]
+            };
+        } else {
+            // Out of bounds
+            break;
+        }
     }
 
     return hasCollision;
