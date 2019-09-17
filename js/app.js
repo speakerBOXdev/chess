@@ -1,6 +1,6 @@
 
 const pieceStyles = {
-    "empty": "",
+    "empty": "fa fa-circle",
     "pawn": "fas fa-chess-pawn",
     "knight": "fas fa-chess-knight",
     "rook": "fas fa-chess-rook",
@@ -165,6 +165,9 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
 function movePiece(row, column) {
 
     $("#alerts").empty();
+    if (moveHistory.length > 0) {
+        showMove(moveHistory.length -1, false);
+    }
 
     // Start Move
     if (!fromPosition) {
@@ -212,8 +215,10 @@ function movePiece(row, column) {
         // Verify Move
         if (validateMove(fromPosition, nextPosition)) {
 
+            let takenPiece = null;
             if (nextPosition.p.player != "none" && nextPosition.p.player != currentPlayer) {
                 $("#" + currentPlayer + "_tray").append($("#R" + nextPosition.r + "C" + nextPosition.c).children());
+                takenPiece = nextPosition.p;
                 showAlert(currentPlayer + " took " + nextPosition.p.player + "'s " + nextPosition.p.type);
                 if (nextPosition.p.type == "king") {
                     showAlert(currentPlayer + " has won the game!");
@@ -226,11 +231,14 @@ function movePiece(row, column) {
             positions[row][column].moveCount++;
             positions[fromPosition.r][fromPosition.c] = { type: "empty", player: "none" };
          
-            if (currentPlayer == "white" && nextPosition.r == (maxRows -1)) {
-                showAlert("You should be able to get a piece back. This isn't working yet.");
+            // Promotion
+            if (fromPosition.p.type === "pawn" && nextPosition.r === getMaxRowForCurrentPlayer()) {
+                //showAlert("You should be able to get a piece back. This isn't working yet.");
+                
             }
 
-            moveHistory.push({ f: fromPosition, t: nextPosition });
+            moveHistory.push({ f: fromPosition, t: nextPosition, x: takenPiece });
+            showMove(moveHistory.length -1);
 
             // Reset and change the active player
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
@@ -238,6 +246,17 @@ function movePiece(row, column) {
             fromPosition = null;
             currentPlayer = (currentPlayer === "white") ? "black" : "white";
         }
+    }
+}
+
+function getMaxRowForCurrentPlayer() {
+    
+    if (currentPlayer === "white") {
+        return (maxRows -1)
+    }
+
+    if (currentPlayer === "black") {
+        return 0;
     }
 }
 
@@ -288,7 +307,14 @@ function render(boardSelector) {
         toSpan = $("<span></span>").addClass("to").text( m.t.r + "," + m.t.c ),
         pieceIcon = $("<i></i>").addClass(pieceStyles[m.f.p.type] + " player-" + m.f.p.player),
         arrowIcon = $("<i></i>").addClass("fas fa-arrow-right");
-        $row.append(pieceIcon,fromSpan, arrowIcon,toSpan);
+        $row.append(pieceIcon,fromSpan, arrowIcon, toSpan);
+        if (m.x) {
+            let $takenSpan = $("<span></span>").addClass("fa-stack"),
+            $takenPieceIcon = $("<i></i>").addClass("fa-stack-1x " + pieceStyles[m.x.type] + " player-" + m.x.player),
+            $banIcon = $("<i></i>").addClass("fa-stack-2x text-tomato fas fa-ban");
+            $takenSpan.append($takenPieceIcon, $banIcon);
+            $row.append($takenSpan);
+        }
 
         $row.on("mouseover", function() { showMove(i);});
         $row.on("mouseout", function() { showMove(i, false);});
