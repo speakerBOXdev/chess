@@ -29,6 +29,10 @@ select {
     margin: 10px;
 }
 
+.hidden {
+    display: none;
+}
+
 .row:first-of-type .marker,
 .row:last-of-type .marker {
     padding: 0;
@@ -73,14 +77,16 @@ select {
     color: #ccc;
 }
 
-
-#board > .row:nth-of-type(odd) > .tile:nth-of-type(odd).valid > i,
-#board > .row:nth-of-type(even) > .tile:nth-of-type(even).valid > i,
-#board > .row:nth-of-type(even) > .tile:nth-of-type(odd).valid > i,
-#board > .row:nth-of-type(odd) > .tile:nth-of-type(even).valid > i {
+/* Valid Move styling */
+#board .tile.valid i.player-none {
     color: #aaa;
     padding-top: 20px;
     font-size: .5em;
+}
+#board .tile.valid i.player-white,
+#board .tile.valid i.player-black {
+    /* TODO: show a valid take-over move in a better way */
+    font-size: .9em;
 }
 
 /** BLUE THEME **/
@@ -149,9 +155,6 @@ select {
     text-shadow: #666 2px 2px 1px;
 }
 
-.player-white, .player-black {
-    opacity: .7;
-}
 .tray .player-white, .tray .player-black {
     opacity: 1;
 }
@@ -232,7 +235,28 @@ select {
     margin: 0 25px;
 }
 
-
+.text-green {
+    color: green;
+}
 .text-tomato {
     color: tomato;
+}
+
+.ui-dialog {
+    background-color: #dedede;
+}
+
+.dialog-promotion i {
+    font-size: 50px;
+    margin: 15px;
+}
+.ui-dialog-title {
+    font-size: 25px;
+    background-color: #888;
+    color: #eee;
+    padding: 10px;
+    display: block;
+}
+.ui-dialog-titlebar-close {
+    display: none;
 }

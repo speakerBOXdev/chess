@@ -123,7 +123,7 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
             tile.addClass(tileClass);
 
             // Add tile event handlers
-            $(tile).on("click", () => { movePiece(rowIndex, columnIndex); render(boardSelector); } );
+            $(tile).on("click", () => { movePiece(rowIndex, columnIndex); } );
             
             // Add tile to row
             $rowContainer.append(tile);
@@ -153,8 +153,56 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
     $themingWrapper.append($themeLabel, $themeSelector);
     $boardWrapper.before($themingWrapper, $whiteTray).after($blackTray);
 
+
+    let $promotionDialog = $("<div></div>").prop("id", "promotionDialog").addClass("dialog-promotion hidden");
+    let $queen =$("<i></i>").addClass(pieceStyles["queen"]).on("click", function () { selectPromotion("queen"); }),
+    $rook =$("<i></i>").addClass(pieceStyles["rook"]).on("click", function () { selectPromotion("rook"); }),
+    $bishop =$("<i></i>").addClass(pieceStyles["bishop"]).on("click", function () { selectPromotion("bishop"); }),
+    $knight =$("<i></i>").addClass(pieceStyles["knight"]).on("click", function () { selectPromotion("knight"); });
+    
+    $promotionDialog.append($queen, $rook, $bishop, $knight);
+    
+    $boardWrapper.after($promotionDialog);
+
     initializePieces();
     render(boardSelector);
+}
+
+function selectPromotion(type) {
+
+    if (!type)  {
+        console.warn("selectPromotion('"+ type + "') 'type' must have value.");
+        return;
+    }
+    if (moveHistory.length > 0) {
+
+        moveHistory[moveHistory.length -1].p.type = type;
+        $("#first").children().first().remove();
+        showAlert("You have selected '" + type + "'.");
+        $("#promotionDialog").dialog("close");
+        
+        /* TODO: This is not really what I want to do but it works */
+        let lastMoveIndex = moveHistory.length -1,
+        lastMove = moveHistory[lastMoveIndex]; 
+        
+        let $tile = getTile(lastMove.t.r, lastMove.t.c);
+        $tile.children().removeClass("fa-chess-pawn").addClass(pieceStyles[lastMove.p.type])
+        positions[lastMove.t.r][lastMove.t.c].type = lastMove.p.type;
+
+        let row = buildMoveHistory(lastMove, lastMoveIndex);
+        $("#first").children().first().before(row);
+    } else {
+        console.warn("selectPromotion('" + type + "') moveHistory contained no values.");
+    }
+}
+
+function getLastMove() {
+    let lastMoveIndex = moveHistory.length -1;
+    return moveHistory[lastMoveIndex]; 
+}
+
+function getTile(row, column) {
+    return $("#R" + row + "C" + column);
 }
 
 /**
@@ -165,12 +213,6 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
 function movePiece(row, column) {
 
     $("#alerts").empty();
-
-    // Hide last move indicator
-    if (moveHistory.length > 0) {
-        let lastMove = moveHistory[moveHistory.length -1];
-        showMove(lastMove.f.r, lastMove.f.c, lastMove.t.r, lastMove.t.c, false);
-    }
 
     // Start Move
     if (!fromPosition) {
@@ -187,6 +229,12 @@ function movePiece(row, column) {
             return;
         } 
 
+        // Hide last move indicator
+        if (moveHistory.length > 0) {
+            let lastMove = moveHistory[moveHistory.length -1];
+            showMove(lastMove.f.r, lastMove.f.c, lastMove.t.r, lastMove.t.c, false);
+        }
+
         showAlert("Where do you want to move your " + position.type + "?");
 
         fromPosition = { r: row, c: column, p: position };
@@ -200,6 +248,11 @@ function movePiece(row, column) {
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
             showValidMove(fromPosition, false);
             fromPosition = null;
+            
+            // Show the last move again
+            let lastMove = moveHistory[moveHistory.length -1];
+            showMove(lastMove.f.r, lastMove.f.c, lastMove.t.r, lastMove.t.c);
+
             return;
         }
 
@@ -235,12 +288,22 @@ function movePiece(row, column) {
             positions[fromPosition.r][fromPosition.c] = { type: "empty", player: "none" };
          
             // Promotion
+            let promotion = null;
             if (fromPosition.p.type === "pawn" && nextPosition.r === getMaxRowForCurrentPlayer()) {
-                //showAlert("You should be able to get a piece back. This isn't working yet.");
+                $("#promotionDialog").dialog( {
+                    minHeight: 100,
+                    dialog: true,
+                    classes: { "ui-dialog": "player-" + currentPlayer}, 
+                    title: "Select your piece"
+                });
+                $("#promotionDialog").dialog("open");
                 
+
+                showAlert("You should be able to get a piece back. This isn't working yet.");
+                promotion = { type: "queen", player: currentPlayer };
             }
 
-            moveHistory.push({ f: fromPosition, t: nextPosition, x: takenPiece });
+            moveHistory.push({ f: fromPosition, t: nextPosition, x: takenPiece, p: promotion });
             showMove(fromPosition.r, fromPosition.c, nextPosition.r, nextPosition.c);
 
             // Reset and change the active player
@@ -248,6 +311,8 @@ function movePiece(row, column) {
             showValidMove(fromPosition, false);
             fromPosition = null;
             currentPlayer = (currentPlayer === "white") ? "black" : "white";
+
+            render("#board");
         }
     }
 }
@@ -302,27 +367,50 @@ function render(boardSelector) {
         showAlert("It is your turn " + currentPlayer);
     }
 
-    $("#first").empty()
-    moveHistory.forEach((m, i) => {
-        let $row = $("<div></div>").prop("id", "move_" + i).addClass("move-history");
+    if (moveHistory.length > 0) {
+        let i = moveHistory.length -1;
+        let m = moveHistory[i];
+        let $row = buildMoveHistory(m, i);
+        if ($("#first").children()[0]) {
 
-        let fromSpan = $("<span></span>").addClass("from").text( m.f.r + "," + m.f.c ),
-        toSpan = $("<span></span>").addClass("to").text( m.t.r + "," + m.t.c ),
-        pieceIcon = $("<i></i>").addClass(pieceStyles[m.f.p.type] + " player-" + m.f.p.player),
-        arrowIcon = $("<i></i>").addClass("fas fa-arrow-right");
-        $row.append(pieceIcon,fromSpan, arrowIcon, toSpan);
-        if (m.x) {
-            let $takenSpan = $("<span></span>").addClass("fa-stack"),
-            $takenPieceIcon = $("<i></i>").addClass("fa-stack-1x " + pieceStyles[m.x.type] + " player-" + m.x.player),
-            $banIcon = $("<i></i>").addClass("fa-stack-2x text-tomato fas fa-ban");
-            $takenSpan.append($takenPieceIcon, $banIcon);
-            $row.append($takenSpan);
+            $("#first").children().first().before($row);
+        } else {
+            $("#first").append($row);
         }
+    }
+}
 
-        $row.on("mouseover", function() { showMove(m.f.r, m.f.c, m.t.r, m.t.c);});
-        $row.on("mouseout", function() { showMove(m.f.r, m.f.c, m.t.r, m.t.c, false);});
-        $("#first").append($row );
-    });
+function buildMoveHistory(m, i) {
+    let $row = $("<div></div>").prop("id", "move_" + i).addClass("move-history");
+
+    let fromSpan = $("<span></span>").addClass("from").text( m.f.r + "," + m.f.c ),
+    toSpan = $("<span></span>").addClass("to").text( m.t.r + "," + m.t.c ),
+    pieceIcon = $("<i></i>").addClass(pieceStyles[m.f.p.type] + " player-" + m.f.p.player),
+    arrowIcon = $("<i></i>").addClass("fas fa-arrow-right");
+    $row.append(pieceIcon,fromSpan, arrowIcon, toSpan);
+
+    // Taken Piece
+    if (m.x) {
+        let $takenSpan = $("<span></span>").addClass("fa-stack"),
+        $takenPieceIcon = $("<i></i>").addClass("fa-stack-1x " + pieceStyles[m.x.type] + " player-" + m.x.player),
+        $banIcon = $("<i></i>").addClass("fa-stack-2x text-tomato fas fa-ban");
+        $takenSpan.append($takenPieceIcon, $banIcon);
+        $row.append($takenSpan);
+    }
+
+    // Promotion
+    if (m.p) {
+        let $promoSpan = $("<span></span>").addClass("fa-stack"),
+        $promoPieceIcon = $("<i></i>").addClass("fa-stack-1x " + pieceStyles[m.p.type] + " player-" + m.p.player),
+        $circleIcon = $("<i></i>").addClass("fa-stack-2x text-green far fa-circle");
+        $promoSpan.append($promoPieceIcon, $circleIcon);
+        $row.append($promoSpan);
+    }
+
+    $row.on("mouseover", function() { showMove(m.f.r, m.f.c, m.t.r, m.t.c);});
+    $row.on("mouseout", function() { showMove(m.f.r, m.f.c, m.t.r, m.t.c, false);});
+
+    return $row;
 }
 
 /**
@@ -334,7 +422,10 @@ function render(boardSelector) {
  * @param {number} show 
  */
 function showMove(fromRow, fromColumn, toRow, toColumn, show = true) {
-    if (!(fromRow && fromColumn && toRow && toColumn)) throw "Arguments cannot be null";
+    if (fromRow == undefined 
+        || fromColumn == undefined
+        || toRow == undefined
+        || toColumn == undefined) throw "Arguments cannot be null";
 
     let $from = $("#R" + fromRow + "C" + fromColumn),
     $to = $("#R" + toRow + "C" + toColumn);
