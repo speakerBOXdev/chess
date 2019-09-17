@@ -165,8 +165,11 @@ function initialize(boardSelector = "#board", alertSelector = "#second") {
 function movePiece(row, column) {
 
     $("#alerts").empty();
+
+    // Hide last move indicator
     if (moveHistory.length > 0) {
-        showMove(moveHistory.length -1, false);
+        let lastMove = moveHistory[moveHistory.length -1];
+        showMove(lastMove.f.r, lastMove.f.c, lastMove.t.r, lastMove.t.c, false);
     }
 
     // Start Move
@@ -238,7 +241,7 @@ function movePiece(row, column) {
             }
 
             moveHistory.push({ f: fromPosition, t: nextPosition, x: takenPiece });
-            showMove(moveHistory.length -1);
+            showMove(fromPosition.r, fromPosition.c, nextPosition.r, nextPosition.c);
 
             // Reset and change the active player
             $("#R" + fromPosition.r + "C" + fromPosition.c).removeClass("selected");
@@ -316,17 +319,26 @@ function render(boardSelector) {
             $row.append($takenSpan);
         }
 
-        $row.on("mouseover", function() { showMove(i);});
-        $row.on("mouseout", function() { showMove(i, false);});
+        $row.on("mouseover", function() { showMove(m.f.r, m.f.c, m.t.r, m.t.c);});
+        $row.on("mouseout", function() { showMove(m.f.r, m.f.c, m.t.r, m.t.c, false);});
         $("#first").append($row );
     });
 }
 
-function showMove(index, show = true) {
-    let m = moveHistory[index];
-    let $from = $("#R" + m.f.r + "C" + m.f.c),
-        $to = $("#R" + m.t.r + "C" + m.t.c);
-    
+/**
+ * @summary Highlight the from and to positions of a move
+ * @param {number} fromRow 
+ * @param {number} fromColumn 
+ * @param {number} toRow 
+ * @param {number} toColumn 
+ * @param {number} show 
+ */
+function showMove(fromRow, fromColumn, toRow, toColumn, show = true) {
+    if (!(fromRow && fromColumn && toRow && toColumn)) throw "Arguments cannot be null";
+
+    let $from = $("#R" + fromRow + "C" + fromColumn),
+    $to = $("#R" + toRow + "C" + toColumn);
+
     if (show) {
         $from.addClass("from");
         $to.addClass("to");
