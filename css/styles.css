@@ -28,22 +28,93 @@ select {
     background-color: aliceblue;
     margin: 10px;
 }
+
+.row:first-of-type .marker,
+.row:last-of-type .marker {
+    padding: 0;
+    text-align: center;
+    margin: 0 20px 0 20px;
+}
+.marker:first-of-type,
+.marker:last-of-type {
+    
+    margin: 20px 0 0;
+}
+.marker:first-of-type {
+    text-align: right;
+}
+.marker:last-of-type {
+    text-align: left;
+}
+
 .marker {
     display: inline-block;
     vertical-align: middle;
-    height: 30px;
     border-width: 2px;
     border-style: solid;
     border-color: transparent;
-    padding-top: 20px;
-    padding-right: 10px;
-    width: 30px;
-    padding-left: 10px;
+    color: #999;
 }
-/*
-.marker {
-    display: none;
-}*/
+
+/** DEFAULT THEME **/
+/* Dark Tiles */
+#board > .row:nth-of-type(odd) > .tile:nth-of-type(odd),
+#board > .row:nth-of-type(even) > .tile:nth-of-type(even) {
+    background-color: #999;
+    border-color: #999;
+    color: #999;
+}
+
+/* Light Tiles */
+#board > .row:nth-of-type(even) > .tile:nth-of-type(odd),
+#board > .row:nth-of-type(odd) > .tile:nth-of-type(even) {
+    background-color: #ccc;
+    border-color: #ccc;
+    color: #ccc;
+}
+
+
+#board > .row:nth-of-type(odd) > .tile:nth-of-type(odd).valid > i,
+#board > .row:nth-of-type(even) > .tile:nth-of-type(even).valid > i,
+#board > .row:nth-of-type(even) > .tile:nth-of-type(odd).valid > i,
+#board > .row:nth-of-type(odd) > .tile:nth-of-type(even).valid > i {
+    color: #aaa;
+    padding-top: 20px;
+    font-size: .5em;
+}
+
+/** BLUE THEME **/
+/* Dark Tiles */
+#board.blue > .row:nth-of-type(odd) > .tile:nth-of-type(odd),
+#board.blue > .row:nth-of-type(even) > .tile:nth-of-type(even) {
+    background-color: skyblue;
+    border-color: skyblue;
+    color: skyblue;
+}
+/* Light Tiles */
+#board.blue > .row:nth-of-type(even) > .tile:nth-of-type(odd),
+#board.blue > .row:nth-of-type(odd) > .tile:nth-of-type(even) {
+    background-color: lightblue;
+    border-color: lightblue;
+    color: lightblue;
+}
+
+/** RED THEME **/
+/* Dark Tiles */
+#board.red > .row:nth-of-type(odd) > .tile:nth-of-type(odd),
+#board.red > .row:nth-of-type(even) > .tile:nth-of-type(even) {
+    background-color: maroon;
+    border-color: maroon;
+    color: maroon;
+}
+/* Light Tiles */
+#board.red > .row:nth-of-type(even) > .tile:nth-of-type(odd),
+#board.red > .row:nth-of-type(odd) > .tile:nth-of-type(even) {
+    background-color: lightcoral;
+    border-color: lightcoral;
+    color: lightcoral;
+}
+
 .tile {
     display: inline-block;
     width: 50px;
@@ -54,18 +125,21 @@ select {
     border-width: 2px;
     border-style: solid;
 }
-.tile i {
-    padding-top: 10px;
-}
+    .tile i {
+        padding-top: 10px;
+    }
 
 .tray {
     height: 35px;
     background-color: #888;
     font-size: 20px;
+    margin: 15px 75px;
 }
 .tray i {
     padding: 5px;
 }
+
+
 
 .player-white,.player-black {
     text-shadow: #999 2px 2px 1px;
@@ -98,10 +172,6 @@ select {
     text-shadow: #666 5px 5px 2px;
 }
 
-.dark {
-    background-color: #999;
-    border-color: #999;
-}
 .tile.selected {
     border-color: goldenrod;
 }
@@ -113,30 +183,24 @@ select {
     padding-top: 5px;
 }
 .tile.from, .move-history .from {
-    border-color: orange;
+    border-color: orange !important;
 }
 .tile.to, .move-history .to {
-    border-color: darkorange;
-}
-.tile.valid {
-    border-color: red;
+    border-color: darkorange !important;
 }
 
 .tile.checked {
-    border-color: blue;
+    border-color: blue !important;
 }
 
-.light {
-    background-color: #bbb;
-    border-color: #bbb;
-}
+/*
 .row {
     display:block;
-}
+ }
 .row:after, .row:before {
     content: " ";
     display: block;
-}
+} */
 
 .alert {
     padding: 25px;
@@ -157,24 +221,6 @@ select {
     border-color: goldenrod;
 }
 
-.blue .light {
-    background-color: lightblue;
-    border-color: lightblue;
-}
-.blue .dark {
-    background-color: skyblue;
-    border-color: skyblue;
-}
-
-.red .light {
-    background-color: lightcoral;
-    border-color: lightcoral;
-}
-.red .dark {
-    background-color: maroon;
-    border-color: maroon;
-}
-
 .move-history {
     padding: 10px;
     background-color: #999;
@@ -184,4 +230,9 @@ select {
     border-width: 1px;
     border-style: solid;
     margin: 0 25px;
+}
+
+
+.text-tomato {
+    color: tomato;
 }
